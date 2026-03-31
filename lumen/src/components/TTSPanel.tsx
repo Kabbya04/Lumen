@@ -68,6 +68,7 @@ const TTSPanel = ({ textToRead }: Props) => {
       audio.src = urls[index]!;
       audio.play().catch((e) => {
         console.error("Audio play failed:", e);
+        setError(e instanceof Error ? e.message : "Audio playback was blocked by the browser.");
         setProgress(100);
         setIsPlaying(false);
       });
@@ -92,7 +93,14 @@ const TTSPanel = ({ textToRead }: Props) => {
     }
 
     if (isPaused) {
-      await audioRef.current?.play();
+      try {
+        await audioRef.current?.play();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "Unable to resume audio.");
+        setIsPlaying(false);
+        setIsPaused(false);
+        return;
+      }
       const urls = blobUrlsRef.current;
       const idx = currentIndexRef.current;
       if (urls.length > 0 && audioRef.current) {
@@ -125,8 +133,12 @@ const TTSPanel = ({ textToRead }: Props) => {
       blobUrlsRef.current = urls;
       currentIndexRef.current = 0;
 
-      const audio = new Audio();
-      audioRef.current = audio;
+      const audio = audioRef.current;
+      if (!audio) {
+        setError("Audio player failed to initialize.");
+        setIsLoading(false);
+        return;
+      }
 
       audio.onended = () => {
         stopProgressTimer();
@@ -142,6 +154,7 @@ const TTSPanel = ({ textToRead }: Props) => {
 
       audio.onerror = () => {
         stopProgressTimer();
+        setError("Audio playback failed.");
         setIsPlaying(false);
         setIsPaused(false);
       };

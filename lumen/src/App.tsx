@@ -1,14 +1,19 @@
-import { useState } from "react";
-import Home from "./pages/Home";
-import Library from "./pages/Library";
-import Focus from "./pages/Focus";
-import QuizPage from "./pages/QuizPage";
+import { Suspense, lazy, useState } from "react";
+import FocusTimerMiniWidget from "./components/FocusTimerMiniWidget";
 import { useTheme } from "./contexts/ThemeContext";
 import { SessionProvider, useSession } from "./contexts/SessionContext";
-import { BookOpen, Moon, Sun, Library as LibraryIcon, Crosshair, Flame, Award, ClipboardList } from "lucide-react";
+import { TimerProvider } from "./contexts/TimerContext";
+import { BookOpen, Moon, Sun, Library as LibraryIcon, Crosshair, Flame, Award, ClipboardList, PenTool, Timer } from "lucide-react";
 import { getStreak, isMastered, hasPendingQuiz } from "./lib/storage";
 
-type Page = "study" | "library" | "focus" | "quiz";
+const Home = lazy(() => import("./pages/Home"));
+const Library = lazy(() => import("./pages/Library"));
+const Focus = lazy(() => import("./pages/Focus"));
+const QuizPage = lazy(() => import("./pages/QuizPage"));
+const NoteTaker = lazy(() => import("./pages/NoteTaker"));
+const FocusTimerPage = lazy(() => import("./pages/FocusTimerPage"));
+
+type Page = "study" | "library" | "focus" | "quiz" | "note-taker" | "focus-timer";
 
 function AppNav({
   currentPage,
@@ -78,6 +83,32 @@ function AppNav({
           <Crosshair className="h-4 w-4" />
           Focus
         </span>
+      </button>
+      <button
+        type="button"
+        onClick={() => handleNav("note-taker")}
+        className={`rounded-lg px-3 py-2 text-caption font-medium transition-colors duration-150 flex items-center gap-1.5 ${
+          currentPage === "note-taker"
+            ? "text-deep-moss bg-deep-moss/10 dark:text-dark-moss dark:bg-dark-moss/15"
+            : "text-deep-moss/80 hover:text-deep-moss dark:text-dark-moss/80 dark:hover:text-dark-moss"
+        }`}
+        title="Whiteboard notes"
+      >
+        <PenTool className="h-4 w-4" />
+        Note Taker
+      </button>
+      <button
+        type="button"
+        onClick={() => handleNav("focus-timer")}
+        className={`rounded-lg px-3 py-2 text-caption font-medium transition-colors duration-150 flex items-center gap-1.5 ${
+          currentPage === "focus-timer"
+            ? "text-deep-moss bg-deep-moss/10 dark:text-dark-moss dark:bg-dark-moss/15"
+            : "text-deep-moss/80 hover:text-deep-moss dark:text-dark-moss/80 dark:hover:text-dark-moss"
+        }`}
+        title="Focus timer"
+      >
+        <Timer className="h-4 w-4" />
+        Focus Timer
       </button>
       <button
         type="button"
@@ -220,7 +251,12 @@ function AppContent() {
             onNavAttempt={handleNavAttempt}
           />
 
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 shrink-0 items-center gap-2 sm:gap-3">
+            <FocusTimerMiniWidget
+              onOpenFocusTimer={() =>
+                quizInProgress ? handleNavAttempt("focus-timer") : setPage("focus-timer")
+              }
+            />
             <StreakAndMastery />
             <button
               type="button"
@@ -244,16 +280,34 @@ function AppContent() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
-        {page === "study" && <Home />}
-        {page === "library" && <Library onEnterFocus={() => (quizInProgress ? handleNavAttempt("focus") : setPage("focus"))} />}
-        {page === "focus" && <Focus />}
-        {page === "quiz" && (
-          <QuizPage
-            onQuizStarted={() => setQuizInProgress(true)}
-            onQuizCompleted={() => setQuizInProgress(false)}
-          />
-        )}
+      <main
+        className={
+          page === "note-taker"
+            ? "w-full max-w-none px-0"
+            : "mx-auto max-w-6xl px-4 sm:px-6 lg:px-8"
+        }
+      >
+        <Suspense
+          fallback={
+            <div className="py-8 text-center text-caption text-deep-moss/70 dark:text-dark-moss/70">
+              Loading...
+            </div>
+          }
+        >
+          {page === "study" && <Home />}
+          {page === "library" && (
+            <Library onEnterFocus={() => (quizInProgress ? handleNavAttempt("focus") : setPage("focus"))} />
+          )}
+          {page === "focus" && <Focus />}
+          {page === "note-taker" && <NoteTaker />}
+          {page === "focus-timer" && <FocusTimerPage />}
+          {page === "quiz" && (
+            <QuizPage
+              onQuizStarted={() => setQuizInProgress(true)}
+              onQuizCompleted={() => setQuizInProgress(false)}
+            />
+          )}
+        </Suspense>
       </main>
     </div>
   );
@@ -262,7 +316,9 @@ function AppContent() {
 function App() {
   return (
     <SessionProvider>
-      <AppContent />
+      <TimerProvider>
+        <AppContent />
+      </TimerProvider>
     </SessionProvider>
   );
 }

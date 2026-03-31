@@ -30,3 +30,15 @@
 .dark .scrollbar-thin {
   scrollbar-color: rgba(212, 224, 218, 0.5) transparent;
 }
+
+/* Note Taker: hide embedded whiteboard vendor branding in the UI only */
+.note-taker-excalidraw .excalidraw .ExcalidrawLogo,
+.note-taker-excalidraw .excalidraw .ExcalidrawLogo-text {
+  display: none !important;
+}
+
+.note-taker-excalidraw .excalidraw a[href*="excalidraw.com"],
+.note-taker-excalidraw .excalidraw a[href*="plus.excalidraw"],
+.note-taker-excalidraw .excalidraw a[href*="docs.excalidraw.com"] {
+  display: none !important;
+}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import UploadForm from "../components/UploadForm";
 import ChatPanel from "../components/ChatPanel";
 import AnalysisPanel from "../components/AnalysisPanel";
@@ -9,7 +9,7 @@ import * as pdfjsLib from "pdfjs-dist";
 import { getAnalysis } from "../lib/groq";
 import { useSession } from "../contexts/SessionContext";
 import type { DocumentFile } from "../types/session";
-import { getDocKey, setLastDoc } from "../lib/storage";
+import { getDocKey, getLastDoc, setLastDoc } from "../lib/storage";
 
 pdfjsLib.GlobalWorkerOptions.workerSrc = new URL(
   "/pdf-worker/pdf.worker.min.mjs",
@@ -31,9 +31,6 @@ const Home = () => {
   } = useSession();
   const [isLoading, setIsLoading] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-  /** Tracks which document we already analyzed so we don't re-run when navigating back to Study. */
-  const analyzedDocRef = useRef<DocumentFile | null>(null);
-
   const handleFileUpload = async (file: File) => {
     setIsLoading(true);
     const extension = file.name.split(".").pop()?.toLowerCase() || "";
@@ -104,12 +101,18 @@ const Home = () => {
   };
 
   useEffect(() => {
-    if (!document) {
-      analyzedDocRef.current = null;
-      return;
-    }
-    if (analyzedDocRef.current === document) return;
-    analyzedDocRef.current = document;
+    if (!document) return;
+    const currentDocKey = getDocKey(document.name, document.textContent.length);
+    const hasCurrentAnalysis =
+      analysis.summary.trim().length > 0 ||
+      analysis.keyPoints.length > 0 ||
+      analysis.questions.length > 0;
+    const lastDoc = getLastDoc();
+
+    // Home unmounts/remounts when switching tabs; skip regeneration if this doc
+    // already has analysis in session state and matches the last analyzed doc key.
+    if (hasCurrentAnalysis && lastDoc?.docKey === currentDocKey) return;
+
     const generateAnalysis = async () => {
       setIsAnalysisLoading(true);
       try {
@@ -122,7 +125,7 @@ const Home = () => {
           questions,
         });
         setLastDoc({
-          docKey: getDocKey(document.name, document.textContent.length),
+          docKey: currentDocKey,
           docName: document.name,
           questions,
           keyPoints,
@@ -145,7 +148,15 @@ const Home = () => {
       setIsAnalysisLoading(false);
     };
     generateAnalysis();
-  }, [document, setAnalysis, setIsAnalysisLoading, setApiKeyError]);
+  }, [
+    document,
+    analysis.summary,
+    analysis.keyPoints.length,
+    analysis.questions.length,
+    setAnalysis,
+    setIsAnalysisLoading,
+    setApiKeyError,
+  ]);
 
   if (apiKeyError) {
     return (
