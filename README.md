@@ -6,7 +6,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind%20CSS-3.4-06B6D4?style=flat-square&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Groq](https://img.shields.io/badge/Groq-LLM-FF6B35?style=flat-square)](https://groq.com/)
 
-A web-based document analysis platform that uses an LLM to summarize documents, extract key points, generate questions with answers, and provide an AI study assistant with optional text-to-speech for accessibility.
+A web-based study platform that uses an LLM to summarize documents, extract key points, generate questions with answers, and provide an AI study assistant, daily quiz, Focus timer, note-taking whiteboard, and optional text-to-speech for accessibility.
 
 ---
 
@@ -34,9 +34,11 @@ A web-based document analysis platform that uses an LLM to summarize documents, 
 
 | Feature | Description |
 |--------|-------------|
-| **Study** | Upload a document; get a summary, key points, and generated questions. Chat with the doc, use “Explain to a 10-year-old,” rate your recall, and save a one-line takeaway. |
+| **Study** | Upload a document; get a summary, key points, and generated questions. Chat with the doc, use “Explain to a 10-year-old,” rate your recall, and save a one-line takeaway. Analysis is generated once per document/session and reused when navigating between sections. |
 | **Library** | Self-assessment center: rate key points, practice “teach me back,” and see a confidence heatmap. Enter Focus mode from here. |
 | **Focus** | Distraction-free view of summary and key points. |
+| **Note Taker** | Full-width infinite whiteboard for freeform note-taking and diagrams. Board content is saved locally and restored when you return. |
+| **Focus Timer** | Focus / short break / long break timer (every fourth focus → long break). State is stored in `localStorage` and stays in sync across sections; the header shows a compact timer with quick play/pause. |
 | **Daily quiz** | Dedicated Quiz page with multiple questions from docs you studied yesterday (or last doc as fallback). A dot on the nav indicates a pending quiz; once started, leaving the page shows a confirmation (quiz terminates and must be restarted). |
 | **Document summarization** | Concise, coherent summaries that capture main sections and key details. |
 | **Key point extraction** | Headlines and definitions for important concepts, with document-specific context. |
@@ -77,16 +79,16 @@ cd lumen
 
 ### 2. Install dependencies
 
-From the project root, go into the app directory and install:
+From the repository root:
 
 ```bash
-cd crack_the_doc
+cd lumen
 npm install
 ```
 
 ### 3. Configure environment
 
-Copy `.env.example` to `.env` in the `crack_the_doc` directory and set at least the Groq key:
+Copy `.env.example` to `.env` in the `lumen` directory and set at least the Groq key:
 
 ```env
 VITE_GROQ_API_KEY=your_groq_api_key_here
@@ -128,14 +130,14 @@ Open the URL shown in the terminal (e.g. `http://localhost:5173`) in your browse
 ## Project Structure
 
 ```
-lumen/
-├── crack_the_doc/          # Frontend application
+Lumen/
+├── lumen/                  # Frontend application
 │   ├── public/             # Static assets (e.g. PDF worker)
 │   ├── src/
-│   │   ├── components/     # UI components (upload, chat, analysis, TTS, TodayQuizCard, etc.)
-│   │   ├── contexts/       # Theme, Session (document + analysis state)
-│   │   ├── lib/            # Groq client, ElevenLabs TTS, storage (ratings, streak, quiz)
-│   │   ├── pages/          # Home (Study), Library, Focus, QuizPage
+│   │   ├── components/     # UI components (upload, chat, analysis, TTS, quiz, etc.)
+│   │   ├── contexts/       # Theme, Session, Focus timer
+│   │   ├── lib/            # Groq client, ElevenLabs TTS, local storage helpers
+│   │   ├── pages/          # Home (Study), Library, Focus, NoteTaker, Focus Timer, QuizPage
 │   │   ├── App.tsx
 │   │   └── main.tsx
 │   ├── index.html
@@ -143,8 +145,6 @@ lumen/
 │   ├── tailwind.config.js
 │   ├── tsconfig.json
 │   └── vite.config.ts
-├── documentation/          # Project docs and design notes
-├── todo.md                 # Pending work (auth, storage, optional features)
 └── README.md
 ```
 
