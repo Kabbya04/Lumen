@@ -1,0 +1,37 @@
+services:
+  api:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+      APP_VERSION: ${APP_VERSION:-0.1.0}
+      CORS_ORIGINS: ${CORS_ORIGINS:-}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-lumen}:${POSTGRES_PASSWORD:-lumen}@db:5432/${POSTGRES_DB:-lumen}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lumen}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lumen}
+      POSTGRES_DB: ${POSTGRES_DB:-lumen}
+    ports:
+      # Host 5433 avoids clashing with a local Postgres on 5432
+      - "5433:5432"
+    volumes:
+      - lumen_pgdata:/var/lib/postgresql/data
+      - ./backend/docker/postgres/init.sql:/docker-entrypoint-initdb.d/01-vector.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lumen} -d ${POSTGRES_DB:-lumen}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  lumen_pgdata:
